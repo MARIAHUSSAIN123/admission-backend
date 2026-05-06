@@ -1,61 +1,47 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 
-// ✅ SIMPLE & SAFE CORS
-app.use(cors({
-  origin: "https://admission-frontend-seven.vercel.app"
-}));
+// 1. Bilkul Simple CORS (No Restrictions)
+app.use(cors()); 
+
+// 2. Manual Headers (Vercel Compatibility)
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PUT,PATCH,DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,Content-Type,Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 app.use(express.json());
 
-// ✅ DB connection (Vercel friendly)
-let isConnected = false;
-async function connectDB() {
-  if (isConnected) return;
-  await mongoose.connect(process.env.MONGO_URI);
-  isConnected = true;
-}
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("DB Connected"))
+    .catch(err => console.log("DB Error:", err));
 
-// Schema
-const studentSchema = new mongoose.Schema({
-  fullName: String,
-  email: String,
-  course: String,
-  phone: String
-});
-
-const Student =
-  mongoose.models.Student || mongoose.model("Student", studentSchema);
+// Model
+const Student = mongoose.model('Student', new mongoose.Schema({
+    fullName: String, email: String, course: String, phone: String
+}));
 
 // Routes
-app.get("/api", (req, res) => {
-  res.send("Backend running ✅");
+app.get('/api', (req, res) => res.send("API is Live!"));
+
+app.post('/api/admission', async (req, res) => {
+    try {
+        const student = new Student(req.body);
+        await student.save();
+        res.status(201).json({ success: true, message: "Data Saved!" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
 });
 
-app.post("/api/admission", async (req, res) => {
-  await connectDB();
-
-  try {
-    const newStudent = new Student(req.body);
-    await newStudent.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Form submitted successfully 🎉"
-    });
-
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-});
-
-// ✅ VERCEL HANDLER (MOST IMPORTANT)
-module.exports = (req, res) => {
-  app(req, res);
-};
+module.exports = app;
