@@ -8,7 +8,18 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors()); // Isse frontend ki requests block nahi hongi
+const cors = require('cors');
+
+// Specific settings for Vercel
+const corsOptions = {
+    origin: "https://admission-frontend-seven.vercel.app", // Aapka frontend URL
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Sab routes par OPTIONS request handle karne ke liye// Isse frontend ki requests block nahi hongi
 
 // MongoDB Atlas Connection
 mongoose.connect(process.env.MONGO_URI)
