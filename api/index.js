@@ -5,12 +5,16 @@ require('dotenv').config();
 
 const app = express();
 
-// Middleware
-app.use(cors()); // Global access for simple testing
+// Middleware - Yahan frontend ka URL allow kiya hai
+app.use(cors({
+    origin: "https://admission-frontend-eight.vercel.app", // Aapka frontend URL
+    methods: ["POST", "GET", "OPTIONS"],
+    credentials: true
+}));
+
 app.use(express.json());
 
 // MongoDB Connection
-// MONGO_URI variable lazmi Vercel dashboard mein add kariyega
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Connected Successfully"))
     .catch(err => console.error("Database Connection Error:", err));
@@ -25,7 +29,7 @@ const studentSchema = new mongoose.Schema({
 
 const Student = mongoose.model('Student', studentSchema);
 
-// Base Route (Testing ke liye)
+// Base Route
 app.get('/api', (req, res) => {
     res.status(200).send("API is Live and Running!");
 });
@@ -42,5 +46,4 @@ app.post('/api/admission', async (req, res) => {
     }
 });
 
-// Vercel Entry Point
 module.exports = app;
