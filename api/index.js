@@ -5,21 +5,21 @@ require('dotenv').config();
 
 const app = express();
 
-// 1. CORS Middleware (Special for Vercel)
+// 1. CORS Setup
 app.use(cors({
     origin: "https://admission-frontend-seven.vercel.app",
     methods: ["POST", "GET", "OPTIONS"],
     credentials: true
 }));
 
-// 2. Manual Header Check (CORS error ka pakka ilaj)
+// 2. Preflight Header Handler (Sabse Zaroori Step)
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', 'https://admission-frontend-seven.vercel.app');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PUT,PATCH,DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization');
     res.setHeader('Access-Control-Allow-Credentials', true);
     
-    // OPTIONS request ko handle karna zaroori hai
+    // Browser jab OPTIONS request bhejta hai toh ye usse 200 return karega
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
@@ -28,11 +28,10 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// 3. MongoDB Connection
-// Note: MONGO_URI aapke Vercel Dashboard ki Environment Variables mein honi chahiye
+// 3. Database Connection
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected Successfully"))
-    .catch(err => console.error("MongoDB Connection Error:", err));
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.error("MongoDB Error:", err));
 
 // 4. Schema & Model
 const studentSchema = new mongoose.Schema({
@@ -44,8 +43,7 @@ const studentSchema = new mongoose.Schema({
 
 const Student = mongoose.model('Student', studentSchema);
 
-// 5. API Routes
-// Kyunke file api folder mein hai, toh route base URL se start hoga
+// 5. API Route (Backend endpoint)
 app.post('/api/admission', async (req, res) => {
     try {
         const newStudent = new Student(req.body);
@@ -56,10 +54,10 @@ app.post('/api/admission', async (req, res) => {
     }
 });
 
-// Test route
+// Test route check karne ke liye
 app.get('/api', (req, res) => {
-    res.send("Backend is working on Vercel!");
+    res.send("Backend server is live!");
 });
 
-// 6. Export for Vercel (Do NOT use app.listen)
+// 6. Export for Vercel
 module.exports = app;
