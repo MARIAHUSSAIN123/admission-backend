@@ -2,40 +2,43 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
-const Student = require('./models/Student');
 
 const app = express();
 
-// --- UNIVERSAL CORS FIX START ---
+// 1. Precise CORS Configuration
 app.use(cors({
-    origin: "*", // Filhal sab allow kar dein takay error khatam ho
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    origin: "https://admission-frontend-seven.vercel.app",
+    methods: ["POST", "GET", "OPTIONS"],
+    credentials: true
 }));
-
-// Vercel ke liye "Preflight" requests (OPTIONS) ko handle karna zaroori hai
-app.options('*', cors()); 
-// --- UNIVERSAL CORS FIX END ---
 
 app.use(express.json());
 
+// 2. Database Connection with Error Handling
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.log(err));
+    .then(() => console.log("DB Connected"))
+    .catch(err => console.log("DB Connection Error: ", err));
 
+// 3. Schema & Model (In the same file for now to avoid path issues)
+const Student = mongoose.model('Student', new mongoose.Schema({
+    fullName: String,
+    email: String,
+    course: String,
+    phone: String
+}));
+
+// 4. Route
 app.post('/api/admission', async (req, res) => {
     try {
-        const newStudent = new Student(req.body);
-        await newStudent.save();
-        res.status(201).json({ message: "Admission form submitted successfully!" });
+        const student = new Student(req.body);
+        await student.save();
+        res.status(201).json({ message: "Success" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.get('/', (req, res) => res.send("Backend is running..."));
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Health check
+app.get('/', (req, res) => res.send("Live"));
 
 module.exports = app;
