@@ -5,10 +5,10 @@ require('dotenv').config();
 
 const app = express();
 
-// Middleware - Yahan frontend ka URL allow kiya hai
+// CORS: Frontend URL ko allow karna zaroori hai
 app.use(cors({
-    origin: "https://admission-frontend-eight.vercel.app", // Aapka frontend URL
-    methods: ["POST", "GET", "OPTIONS"],
+    origin: process.env.FRONTEND_URL, 
+    methods: ["POST", "GET"],
     credentials: true
 }));
 
@@ -16,34 +16,22 @@ app.use(express.json());
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected Successfully"))
-    .catch(err => console.error("Database Connection Error:", err));
+  .then(() => console.log("MongoDB Connected"))
+  .catch(err => console.error("Connection Error:", err));
 
-// Schema & Model
-const studentSchema = new mongoose.Schema({
-    fullName: { type: String, required: true },
-    email: { type: String, required: true },
-    course: { type: String, required: true },
-    phone: { type: String, required: true }
-});
+// Test Route
+app.get("/", (req, res) => res.send("Server is running..."));
 
-const Student = mongoose.model('Student', studentSchema);
-
-// Base Route
-app.get('/api', (req, res) => {
-    res.status(200).send("API is Live and Running!");
-});
-
-// Post Admission Route
-app.post('/api/admission', async (req, res) => {
+// Admission Form Route
+app.post("/api/admission", async (req, res) => {
     try {
-        const newStudent = new Student(req.body);
-        await newStudent.save();
-        res.status(201).json({ success: true, message: "Form submitted successfully!" });
+        // Aapka Model (Schema) yahan use hoga
+        // const student = await Student.create(req.body);
+        res.status(201).json({ message: "Form Submitted Successfully!" });
     } catch (error) {
-        console.error("Post Error:", error);
-        res.status(500).json({ success: false, message: "Server Error: " + error.message });
+        res.status(500).json({ error: "Server Error" });
     }
 });
 
+// Vercel handles the port, isliye app.listen ki bajaye export zaroori hai
 module.exports = app;
