@@ -5,34 +5,36 @@ require('dotenv').config();
 
 const app = express();
 
-// 1. CORS Configuration (Sabse Pehle)
+// 1. CORS Middleware (Special for Vercel)
 app.use(cors({
-    origin: "https://admission-frontend-seven.vercel.app", // Sirf aapka frontend allowed hai
+    origin: "https://admission-frontend-seven.vercel.app",
     methods: ["POST", "GET", "OPTIONS"],
     credentials: true
 }));
 
-// 2. Preflight (OPTIONS) Request Handler
-// Vercel par ye hona lazmi hai varna CORS error kabhi khatam nahi hoga
+// 2. Manual Header Check (CORS error ka pakka ilaj)
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://admission-frontend-seven.vercel.app');
-    res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Origin', 'https://admission-frontend-seven.vercel.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PUT,PATCH,DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
     
+    // OPTIONS request ko handle karna zaroori hai
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        return res.sendStatus(200);
     }
     next();
 });
 
 app.use(express.json());
 
-// 3. Database Connection
+// 3. MongoDB Connection
+// Note: MONGO_URI aapke Vercel Dashboard ki Environment Variables mein honi chahiye
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.log("DB Error:", err));
+    .then(() => console.log("MongoDB Connected Successfully"))
+    .catch(err => console.error("MongoDB Connection Error:", err));
 
-// 4. Student Schema & Model
+// 4. Schema & Model
 const studentSchema = new mongoose.Schema({
     fullName: String,
     email: String,
@@ -42,19 +44,22 @@ const studentSchema = new mongoose.Schema({
 
 const Student = mongoose.model('Student', studentSchema);
 
-// 5. API Route
+// 5. API Routes
+// Kyunke file api folder mein hai, toh route base URL se start hoga
 app.post('/api/admission', async (req, res) => {
     try {
         const newStudent = new Student(req.body);
         await newStudent.save();
-        res.status(201).json({ success: true, message: "Admission successful!" });
+        res.status(201).json({ success: true, message: "Data Saved!" });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// Health Check
-app.get('/', (req, res) => res.send("Server is running..."));
+// Test route
+app.get('/api', (req, res) => {
+    res.send("Backend is working on Vercel!");
+});
 
-// 6. Vercel Export
+// 6. Export for Vercel (Do NOT use app.listen)
 module.exports = app;
