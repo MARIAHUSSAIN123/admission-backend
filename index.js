@@ -6,51 +6,35 @@ const Student = require('./models/Student');
 
 const app = express();
 
-// Middleware
+// --- UNIVERSAL CORS FIX START ---
+app.use(cors({
+    origin: "*", // Filhal sab allow kar dein takay error khatam ho
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+// Vercel ke liye "Preflight" requests (OPTIONS) ko handle karna zaroori hai
+app.options('*', cors()); 
+// --- UNIVERSAL CORS FIX END ---
+
 app.use(express.json());
-const cors = require('cors');
 
-// Specific settings for Vercel
-const corsOptions = {
-    origin: "https://admission-frontend-seven.vercel.app", // Aapka frontend URL
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Sab routes par OPTIONS request handle karne ke liye// Isse frontend ki requests block nahi hongi
-
-// MongoDB Atlas Connection
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("✅ MongoDB Connected Successfully"))
-    .catch(err => console.error("❌ MongoDB Connection Error:", err));
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.log(err));
 
-// Admission Form Route
 app.post('/api/admission', async (req, res) => {
     try {
-        const { fullName, email, course, phone } = req.body;
-        
-        // Simple validation
-        if (!fullName || !email || !course || !phone) {
-            return res.status(400).json({ error: "All fields are required" });
-        }
-
-        const newStudent = new Student({ fullName, email, course, phone });
+        const newStudent = new Student(req.body);
         await newStudent.save();
-        
         res.status(201).json({ message: "Admission form submitted successfully!" });
     } catch (error) {
-        res.status(500).json({ error: "Internal Server Error" });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Health Check Route
-app.get('/', (req, res) => {
-    res.send("Backend Server is Live!");
-});
+app.get('/', (req, res) => res.send("Backend is running..."));
 
-// Port configuration
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
