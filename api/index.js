@@ -5,31 +5,42 @@ require('dotenv').config();
 
 const app = express();
 
-// Sirf simple cors use karein, headers vercel.json sambhal lega
-app.use(cors({
-    origin: "https://admission-frontend-seven.vercel.app",
-    credentials: true
-}));
+// Middleware
+app.use(cors()); // Global access for simple testing
 app.use(express.json());
 
+// MongoDB Connection
+// MONGO_URI variable lazmi Vercel dashboard mein add kariyega
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("DB Connected"))
-    .catch(err => console.log(err));
+    .then(() => console.log("MongoDB Connected Successfully"))
+    .catch(err => console.error("Database Connection Error:", err));
 
-const Student = mongoose.model('Student', new mongoose.Schema({
-    fullName: String, email: String, course: String, phone: String
-}));
+// Schema & Model
+const studentSchema = new mongoose.Schema({
+    fullName: { type: String, required: true },
+    email: { type: String, required: true },
+    course: { type: String, required: true },
+    phone: { type: String, required: true }
+});
 
-app.get('/api', (req, res) => res.send("Live!"));
+const Student = mongoose.model('Student', studentSchema);
 
+// Base Route (Testing ke liye)
+app.get('/api', (req, res) => {
+    res.status(200).send("API is Live and Running!");
+});
+
+// Post Admission Route
 app.post('/api/admission', async (req, res) => {
     try {
-        const student = new Student(req.body);
-        await student.save();
-        res.status(201).json({ success: true, message: "Data Saved!" });
+        const newStudent = new Student(req.body);
+        await newStudent.save();
+        res.status(201).json({ success: true, message: "Form submitted successfully!" });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error("Post Error:", error);
+        res.status(500).json({ success: false, message: "Server Error: " + error.message });
     }
 });
 
+// Vercel Entry Point
 module.exports = app;
