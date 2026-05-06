@@ -7,7 +7,7 @@ const app = express();
 
 // CORS: Frontend URL ko allow karna zaroori hai
 app.use(cors({
-    origin: process.env.FRONTEND_URL, 
+    origin: "https://admission-frontend-sksh.vercel.app", 
     methods: ["POST", "GET"],
     credentials: true
 }));
